@@ -1,95 +1,92 @@
-# ORBITAL ATLAS / 轨道星图
+# ORBITAL ATLAS
 
-一个可交互的开源太阳系三维模型。基于 J2000 平均轨道根数与开普勒二体传播，在浏览器中展示太阳和八大行星的近似日心位置、公转轨迹、自转轴、自转方向及基础天文资料。
+A browser-based 3D model of the Solar System. It tracks the Sun and eight planets with a compact Keplerian orbit model, then turns the numbers into something you can inspect, pause, speed up, and move around.
 
-## 在线体验
+**Live site:** https://xirti.github.io/Carrot/
 
-GitHub Pages 部署完成后访问：
+## What it does
 
-- https://xirti.github.io/Carrot/
+- Renders the Sun and eight planets with Three.js
+- Calculates approximate heliocentric positions from J2000 orbital elements
+- Uses the same propagator for each planet and its plotted orbit
+- Models eccentricity, inclination, ascending node, and perihelion orientation
+- Keeps axial tilt and spin separate, including retrograde rotation
+- Generates planet surfaces, Saturn's rings, Uranus's faint rings, stars, dust, and nebulae at runtime
+- Shows live heliocentric coordinates in AU
+- Includes overview and focused inspection modes
+- Runs entirely in the browser; there is no backend or external data service
 
-## 功能
+## Controls
 
-- 太阳及八大行星的 Three.js 三维场景
-- 基于儒略日推进的近似开普勒轨道
-- 轨道倾角、偏心率、升交点和近日点方向
-- 行星自转、轴倾角、顺行与逆行
-- 程序化行星纹理、土星环、天王星薄环
-- 银河、星云、星群和太阳系尘埃
-- 纯预览模式与动态行星介绍模式
-- 暂停和多档时间倍率
-- 当前近似日心坐标（AU）
-- 鼠标旋转、缩放、点击聚焦
-- Windows 双击启动工具
+- Drag to orbit the camera
+- Scroll to zoom
+- Click a body to inspect it
+- Press `Escape` to return to the overview
+- Press `Space` to pause or resume
+- Choose a simulation rate from the time controls
 
-## 本地运行
+## Run it locally
 
-### Windows 一键启动
+You need Node.js and Python on Windows.
 
-双击：
+Install dependencies and build once:
+
+```bash
+npm ci
+npm run build
+```
+
+On Windows, double-click:
 
 ```text
 双击启动轨道星图.cmd
 ```
 
-停止服务器：
+The launcher serves the existing `dist` directory on `127.0.0.1:4173` and opens it in your default browser. It will build the project with `npm ci` if `dist/index.html` is missing. It does not download a server package at runtime.
+
+To stop the server, double-click:
 
 ```text
 停止本地服务器.cmd
 ```
 
-### 开发模式
+For development:
 
 ```bash
-npm install
+npm ci
 npm run dev
 ```
 
-### 测试与构建
+Tests and production build:
 
 ```bash
 npm test
 npm run build
-npm run preview
 ```
 
-## 操作
+## Orbit model
 
-- 拖拽：旋转视角
-- 滚轮：缩放
-- 点击行星：进入介绍模式
-- `Escape`：返回总览
-- 空格：暂停/继续模拟
-- 时间倍率：1 天/秒、7 天/秒、30 天/秒、1 年/秒
+The simulation uses mean orbital elements at the J2000 epoch. It advances mean anomaly with the orbital period, solves Kepler's equation with Newton-Raphson iteration, and rotates the orbital-plane position into heliocentric ecliptic coordinates.
 
-## 轨道模型与精度边界
+The tests cover Julian date conversion, circular motion, Kepler's equation, closed-orbit sampling, and the expected perihelion and aphelion distances `a(1-e)` and `a(1+e)`.
 
-项目使用：
+This is an educational visualization, not a precision ephemeris. It does not include n-body perturbations, secular element changes, precession, nutation, light-time correction, or relativistic effects. Do not use it for navigation or observation planning.
 
-- J2000 平均轨道根数
-- 儒略日
-- Newton–Raphson 求解开普勒方程
-- 日心椭圆二体传播
+## Display scale
 
-轨迹和实时位置使用同一个传播函数。测试验证了圆轨道、近日点 `a(1-e)`、远日点 `a(1+e)`、轨道闭合采样和 J2000 日期转换。
+A literal scale would make the smaller planets disappear. The display therefore uses three rules:
 
-本项目没有计算多体摄动、轨道根数长期变化、岁差章动、光行时或相对论修正，不是 JPL DE/Horizons 级星历，不能用于航天导航或精密观测计划。
+- The eight planets share one linear radius scale, so the gas and ice giants keep their relative size.
+- The Sun is reduced separately so it does not hide the inner planets.
+- Orbital distances use a monotonic power curve. Their order, eccentricity, and spatial orientation remain intact, but the entire system fits on screen.
 
-## 显示比例
+## Stack
 
-行星半径和轨道距离跨度巨大，因此：
-
-- 八大行星之间使用统一的线性半径比例，以保留类木行星相对尺寸；
-- 太阳尺寸单独压缩，避免遮蔽内行星；
-- 轨道距离使用单调幂函数压缩，同时保留真实顺序、偏心率和空间方向。
-
-## 技术栈
-
-- Vite
 - TypeScript
 - Three.js
+- Vite
 - Vitest
 
-## 开源许可证
+## License
 
-[MIT](LICENSE)
+MIT. See [LICENSE](LICENSE).
