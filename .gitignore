@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.vite/
+*.log
+.orbital-atlas-server.pid
+.orbital-atlas-server.log*
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

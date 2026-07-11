@@ -1,0 +1,8 @@
+export const J2000_JD=2451545
+export interface OrbitalElements{semiMajorAxisAu:number;eccentricity:number;inclinationDeg:number;ascendingNodeDeg:number;longitudeOfPerihelionDeg:number;meanLongitudeDegAtEpoch:number;orbitalPeriodDays:number}
+export interface Vector3Like{x:number;y:number;z:number}
+const TAU=Math.PI*2,radians=(d:number)=>d*Math.PI/180,normalizeRadians=(a:number)=>((a%TAU)+TAU)%TAU
+export const dateToJulianDate=(date:Date)=>date.getTime()/86400000+2440587.5
+export function solveKepler(meanAnomaly:number,eccentricity:number){const m=normalizeRadians(meanAnomaly);let E=eccentricity<.8?m:Math.PI;for(let i=0;i<12;i++){const delta=(E-eccentricity*Math.sin(E)-m)/(1-eccentricity*Math.cos(E));E-=delta;if(Math.abs(delta)<1e-12)break}return E}
+export function orbitalPositionAtJulianDate(e:OrbitalElements,jd:number):Vector3Like{const M0=radians(e.meanLongitudeDegAtEpoch-e.longitudeOfPerihelionDeg),M=M0+TAU*(jd-J2000_JD)/e.orbitalPeriodDays,E=solveKepler(M,e.eccentricity),a=e.semiMajorAxisAu,x0=a*(Math.cos(E)-e.eccentricity),y0=a*Math.sqrt(1-e.eccentricity**2)*Math.sin(E),O=radians(e.ascendingNodeDeg),i=radians(e.inclinationDeg),w=radians(e.longitudeOfPerihelionDeg-e.ascendingNodeDeg),cO=Math.cos(O),sO=Math.sin(O),ci=Math.cos(i),si=Math.sin(i),cw=Math.cos(w),sw=Math.sin(w);return{x:x0*(cO*cw-sO*sw*ci)+y0*(-cO*sw-sO*cw*ci),y:x0*(sO*cw+cO*sw*ci)+y0*(-sO*sw+cO*cw*ci),z:x0*sw*si+y0*cw*si}}
+export function sampleOrbitAtEqualMeanAnomaly(elements:OrbitalElements,sampleCount=720):Vector3Like[]{return Array.from({length:sampleCount},(_,index)=>orbitalPositionAtJulianDate(elements,J2000_JD+elements.orbitalPeriodDays*index/sampleCount))}
