@@ -26,6 +26,8 @@ export class SolarSystemScene {
   private focusDestination = new THREE.Vector3()
   private pointerDown = new THREE.Vector2()
   private pointerDragged = false
+  private pointerStartedAt = 0
+  private activePointers = new Set<number>()
   onSelect?: (body: Planet) => void
 
   constructor(container: HTMLElement) {
@@ -48,6 +50,7 @@ export class SolarSystemScene {
     this.renderer.domElement.addEventListener('pointerdown', this.handlePointerDown)
     this.renderer.domElement.addEventListener('pointermove', this.handlePointerMove)
     this.renderer.domElement.addEventListener('pointerup', this.pick)
+    this.renderer.domElement.addEventListener('pointercancel', (event) => { this.activePointers.delete(event.pointerId); this.pointerDragged=true })
     this.animate()
   }
 
@@ -186,10 +189,12 @@ export class SolarSystemScene {
     })
   }
 
-  private handlePointerDown = (event: PointerEvent) => { this.pointerDown.set(event.clientX, event.clientY); this.pointerDragged = false }
-  private handlePointerMove = (event: PointerEvent) => { if (event.buttons === 1 && this.pointerDown.distanceTo(new THREE.Vector2(event.clientX, event.clientY)) > 5) this.pointerDragged = true }
+  private handlePointerDown = (event: PointerEvent) => { this.activePointers.add(event.pointerId); this.pointerStartedAt=performance.now(); this.pointerDown.set(event.clientX,event.clientY); this.pointerDragged=this.activePointers.size>1; this.renderer.domElement.setPointerCapture(event.pointerId) }
+  private handlePointerMove = (event: PointerEvent) => { const coarse=matchMedia('(pointer: coarse)').matches; if(this.activePointers.size>1||this.pointerDown.distanceTo(new THREE.Vector2(event.clientX,event.clientY))>(coarse?11:6))this.pointerDragged=true }
   private pick = (event: PointerEvent) => {
-    if (this.pointerDragged || event.button !== 0) return
+    const validTap=!this.pointerDragged&&this.activePointers.size===1&&performance.now()-this.pointerStartedAt<500&&event.button===0
+    this.activePointers.delete(event.pointerId)
+    if (!validTap) return
     const rect = this.renderer.domElement.getBoundingClientRect()
     this.pointer.set((event.clientX - rect.left) / rect.width * 2 - 1, -(event.clientY - rect.top) / rect.height * 2 + 1)
     this.raycaster.setFromCamera(this.pointer, this.camera)

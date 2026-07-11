@@ -1,78 +1,18 @@
 import './style.css'
-import { celestialBodies, type Planet } from './data/bodies'
+import { celestialBodies,type Planet } from './data/bodies'
 import { SolarSystemScene } from './scene/SolarSystemScene'
-
-const app = document.querySelector<HTMLDivElement>('#app')!
-app.innerHTML = `
-  <main id="space" aria-label="交互式太阳系模型"></main>
-  <div class="brand"><span>ORBITAL</span> ATLAS <small>轨道星图</small></div>
-  <button class="ghost top-right" id="explore" aria-label="打开行星介绍">探索行星</button>
-  <section class="discovery" id="discovery" aria-live="polite">
-    <button class="back" id="back">← 纯预览</button>
-    <div class="planet-heading"><p id="eyebrow">BODY 04 / 09</p><h1><span id="name-en">Earth</span><em id="name-zh">地球</em></h1></div>
-    <article class="info">
-      <p class="description" id="description"></p>
-      <dl id="facts"></dl><div class="live-position"><span>近似日心坐标 · AU</span><output id="coordinates">X 0 · Y 0 · Z 0</output></div>
-      <p class="notice">位置为 J2000 开普勒两体近似 · 视觉比例经过夸张</p>
-    </article>
-  </section>
-  <nav class="planet-nav" id="planet-nav" aria-label="选择行星"></nav>
-  <div class="timebar">
-    <button id="pause">暂停</button>
-    <label>时间倍率 <select id="speed"><option value="86400">1 天/秒</option><option value="604800">7 天/秒</option><option value="2592000">30 天/秒</option><option value="31557600">1 年/秒</option></select></label>
-    <output id="jd"></output>
-  </div>
-  <div class="hint">拖拽旋转 · 滚轮缩放 · 点击行星探索</div>
-`
-
-const scene = new SolarSystemScene(document.querySelector('#space')!)
-const discovery = document.querySelector<HTMLElement>('#discovery')!
-const nav = document.querySelector<HTMLElement>('#planet-nav')!
-let selected: Planet | null = null
-const savedPlanetId = localStorage.getItem('orbital-atlas:selected-planet') as Planet['id'] | null
-
-nav.innerHTML = celestialBodies.map((p, i) => `<button data-id="${p.id}"><b>${String(i + 1).padStart(2, '0')}</b>${p.nameZh}<small>${p.name}</small></button>`).join('')
-
-function showPlanet(planet: Planet) {
-  selected = planet
-  localStorage.setItem('orbital-atlas:selected-planet', planet.id)
-  document.body.classList.add('is-discovery')
-  document.querySelector('#name-en')!.textContent = planet.name
-  document.querySelector('#name-zh')!.textContent = planet.nameZh
-  document.querySelector('#eyebrow')!.textContent = `BODY ${String(celestialBodies.indexOf(planet) + 1).padStart(2, '0')} / 09`
-  document.querySelector('#description')!.textContent = planet.description
-  document.querySelector('#facts')!.innerHTML = `
-    <div><dt>平均半径</dt><dd>${planet.radiusKm.toLocaleString()} km</dd></div>
-    <div><dt>地球质量</dt><dd>${planet.massEarths} M⊕</dd></div>
-    <div><dt>${planet.id === 'sun' ? '系统位置' : '距日半长轴'}</dt><dd>${planet.id === 'sun' ? '太阳系中心' : `${planet.semiMajorAxisAu.toFixed(3)} AU`}</dd></div>
-    <div><dt>公转周期</dt><dd>${planet.id === 'sun' ? '—' : `${planet.orbitalPeriodDays.toLocaleString()} 天`}</dd></div>
-    <div><dt>自转周期</dt><dd>${Math.abs(planet.rotationPeriodHours).toLocaleString()} 小时${planet.rotationPeriodHours < 0 ? ' · 逆行' : ''}</dd></div>
-    <div><dt>轴倾角</dt><dd>${planet.axialTiltDeg}°</dd></div>
-    <div><dt>温度</dt><dd>${planet.temperature}</dd></div>`
-  nav.querySelectorAll('button').forEach((b) => b.classList.toggle('active', (b as HTMLElement).dataset.id === planet.id))
-}
-
-scene.onSelect = showPlanet
-nav.addEventListener('click', (event) => {
-  const button = (event.target as HTMLElement).closest<HTMLButtonElement>('button[data-id]')
-  if (button) scene.focus(button.dataset.id as Planet['id'])
-})
-document.querySelector('#explore')!.addEventListener('click', () => scene.focus(selected?.id ?? savedPlanetId ?? 'earth'))
-document.querySelector('#back')!.addEventListener('click', () => { document.body.classList.remove('is-discovery'); scene.showOverview() })
-document.querySelector('#pause')!.addEventListener('click', (event) => {
-  scene.setPaused(!scene.isPaused())
-  ;(event.currentTarget as HTMLButtonElement).textContent = scene.isPaused() ? '继续' : '暂停'
-})
-document.querySelector<HTMLSelectElement>('#speed')!.addEventListener('change', (event) => scene.setTimeScale(Number((event.target as HTMLSelectElement).value)))
-addEventListener('keydown', (event) => {
-  if (event.key === 'Escape') { document.body.classList.remove('is-discovery'); scene.showOverview() }
-  if (event.code === 'Space' && event.target === document.body) { event.preventDefault(); (document.querySelector('#pause') as HTMLButtonElement).click() }
-})
-setInterval(() => {
-  document.querySelector('#jd')!.textContent = `JD ${scene.getJulianDate().toFixed(2)}`
-  if (selected) {
-    const position = scene.getBodyPosition(selected.id)
-    document.querySelector('#coordinates')!.textContent = `X ${position.x.toFixed(4)} · Y ${position.y.toFixed(4)} · Z ${position.z.toFixed(4)}`
-  }
-}, 250)
-void discovery
+type LayoutMode='auto'|'desktop'|'mobile';type ContentMode='science'|'mythology'
+const app=document.querySelector<HTMLDivElement>('#app')!
+app.innerHTML=`<main id="space" aria-label="可旋转和缩放的太阳系三维模型"></main><header class="brand"><span>ORBITAL</span> ATLAS <small>轨道星图</small></header><div class="layout-switch" role="group" aria-label="界面排版"><span>界面</span><button data-layout="auto">自动</button><button data-layout="desktop">电脑</button><button data-layout="mobile">移动</button></div><button class="ghost top-right" id="explore">探索天体</button><section class="discovery" id="discovery" aria-live="polite"><button class="back" id="back">← 总览</button><div class="planet-heading"><p id="eyebrow"></p><h1><span id="name-en"></span><em id="name-zh"></em></h1></div><article class="info" id="info"><div class="sheet-handle" aria-hidden="true"></div><div class="content-tabs" role="tablist" aria-label="介绍类别"><button role="tab" data-content="science">天体科学</button><button role="tab" data-content="mythology">神话与象征</button></div><p class="description" id="description"></p><div id="science-panel"><dl id="facts"></dl><div class="live-position"><span>近似日心坐标 · AU</span><output id="coordinates"></output></div></div><div class="sources" id="sources"></div><p class="notice">物理数据：NASA NSSDC · 轨道：JPL J2000 近似模型</p></article></section><nav class="planet-nav" id="planet-nav" aria-label="选择天体"></nav><div class="timebar"><button id="pause">暂停</button><label>时间倍率 <select id="speed"><option value="86400">1 天/秒</option><option value="604800">7 天/秒</option><option value="2592000">30 天/秒</option><option value="31557600">1 年/秒</option></select></label><output id="jd"></output></div><div class="hint">拖拽旋转 · 滚轮/双指缩放 · 轻触天体查看</div>`
+const scene=new SolarSystemScene(document.querySelector('#space')!),nav=document.querySelector<HTMLElement>('#planet-nav')!
+let selected:Planet|null=null,contentMode:ContentMode='science'
+const saved=localStorage.getItem('orbital-atlas:selected-planet') as Planet['id']|null
+nav.innerHTML=celestialBodies.map((p,i)=>`<button data-id="${p.id}"><b>${String(i+1).padStart(2,'0')}</b>${p.nameZh}<small>${p.name}</small></button>`).join('')
+function effectiveLayout(mode:LayoutMode){return mode==='auto'?(matchMedia('(max-width:899px)').matches||matchMedia('(pointer:coarse)').matches?'mobile':'desktop'):mode}
+function setLayout(mode:LayoutMode){localStorage.setItem('orbital-atlas:layout',mode);document.body.dataset.layout=effectiveLayout(mode);document.querySelectorAll('[data-layout]').forEach(b=>b.classList.toggle('active',(b as HTMLElement).dataset.layout===mode))}
+setLayout((localStorage.getItem('orbital-atlas:layout') as LayoutMode)||'auto');addEventListener('resize',()=>{if(localStorage.getItem('orbital-atlas:layout')==='auto')setLayout('auto')})
+document.querySelector('.layout-switch')!.addEventListener('click',e=>{const b=(e.target as HTMLElement).closest<HTMLButtonElement>('[data-layout]');if(b)setLayout(b.dataset.layout as LayoutMode)})
+function renderContent(){if(!selected)return;const science=contentMode==='science';document.querySelector('#description')!.textContent=science?selected.science:selected.mythology;document.querySelector('#science-panel')!.toggleAttribute('hidden',!science);document.querySelector('#sources')!.innerHTML=selected.sources.map(s=>`<a href="${s.url}" target="_blank" rel="noreferrer">${s.label}</a>`).join(' · ');document.querySelectorAll('[data-content]').forEach(b=>{const on=(b as HTMLElement).dataset.content===contentMode;b.classList.toggle('active',on);b.setAttribute('aria-selected',String(on))})}
+function showPlanet(p:Planet){selected=p;localStorage.setItem('orbital-atlas:selected-planet',p.id);document.body.classList.add('is-discovery');document.querySelector('#name-en')!.textContent=p.name;document.querySelector('#name-zh')!.textContent=p.nameZh;document.querySelector('#eyebrow')!.textContent=`BODY ${String(celestialBodies.indexOf(p)+1).padStart(2,'0')} / 09`;document.querySelector('#facts')!.innerHTML=`<div><dt>平均半径</dt><dd>${p.radiusKm.toLocaleString()} km</dd></div><div><dt>地球质量</dt><dd>${p.massEarths} M⊕</dd></div><div><dt>${p.id==='sun'?'系统位置':'轨道半长轴'}</dt><dd>${p.id==='sun'?'日心原点':`${p.semiMajorAxisAu.toFixed(6)} AU`}</dd></div><div><dt>恒星公转周期</dt><dd>${p.id==='sun'?'—':`${p.orbitalPeriodDays.toLocaleString()} 天`}</dd></div><div><dt>恒星自转周期</dt><dd>${Math.abs(p.rotationPeriodHours).toLocaleString()} 小时${p.rotationPeriodHours<0?' · 逆行':''}</dd></div><div><dt>轴倾角</dt><dd>${p.axialTiltDeg}°</dd></div><div><dt>${p.temperature.label}</dt><dd>${p.temperature.value}</dd></div>`;nav.querySelectorAll('button').forEach(b=>{const on=(b as HTMLElement).dataset.id===p.id;b.classList.toggle('active',on);if(on)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')});renderContent()}
+scene.onSelect=showPlanet;nav.addEventListener('click',e=>{const b=(e.target as HTMLElement).closest<HTMLButtonElement>('[data-id]');if(b)scene.focus(b.dataset.id as Planet['id'])});document.querySelector('.content-tabs')!.addEventListener('click',e=>{const b=(e.target as HTMLElement).closest<HTMLButtonElement>('[data-content]');if(b){contentMode=b.dataset.content as ContentMode;renderContent()}})
+document.querySelector('#explore')!.addEventListener('click',()=>scene.focus(selected?.id??saved??'earth'));document.querySelector('#back')!.addEventListener('click',()=>{document.body.classList.remove('is-discovery');scene.showOverview()});document.querySelector('#pause')!.addEventListener('click',e=>{scene.setPaused(!scene.isPaused());(e.currentTarget as HTMLButtonElement).textContent=scene.isPaused()?'继续':'暂停'});document.querySelector<HTMLSelectElement>('#speed')!.addEventListener('change',e=>scene.setTimeScale(Number((e.target as HTMLSelectElement).value)));addEventListener('keydown',e=>{if(e.key==='Escape'){document.body.classList.remove('is-discovery');scene.showOverview()}if(e.code==='Space'&&e.target===document.body){e.preventDefault();(document.querySelector('#pause') as HTMLButtonElement).click()}});setInterval(()=>{document.querySelector('#jd')!.textContent=`JD ${scene.getJulianDate().toFixed(2)}`;if(selected){const p=scene.getBodyPosition(selected.id);document.querySelector('#coordinates')!.textContent=`X ${p.x.toFixed(4)} · Y ${p.y.toFixed(4)} · Z ${p.z.toFixed(4)}`}},250)
